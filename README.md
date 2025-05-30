@@ -89,7 +89,9 @@ npm run dev
 - **API Documentation**: Visit `/api/docs/` when the server is running
 - **Detailed Docs**: See the `docs/` folder for comprehensive guides
 - **Frontend Guide**: Check `frontend/README.md` for frontend-specific instructions
-## 🧪 Testing
+
+
+##  Testing
 
 ```shellscript
 # Run all tests
