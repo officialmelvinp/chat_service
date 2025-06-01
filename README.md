@@ -2,26 +2,14 @@ Chat Service - Real-time Messaging Platform
 
 A comprehensive chat application built with Django REST Framework and React, featuring real-time messaging, friend systems, and chat rooms.
 
-##  Features
+## Features
 
-Real-time Messaging - WebSocket-powered instant messaging
-Friend System - Send/accept friend requests
-Chat Rooms- Create and join group conversations  
-User Authentication - JWT-based secure authentication
-REST API - Comprehensive API with Swagger documentation
+Real-time WebSocket-powered messaging, friend requests, group chat rooms, JWT-secured user authentication, and a fully documented REST API.
 
-##  Tech Stack
+## Tech Stack
 
-Backend:
-Django & Django REST Framework
-PostgreSQL
-Django Channels (WebSockets)
-JWT Authentication
-
-Frontend:
-Next.js/React
-WebSocket client
-Responsive design
+Backend: Django, Django REST Framework, PostgreSQL, Django Channels, JWT Authentication
+Frontend: Next.js, React, WebSocket client, responsive design
 
 ##  Project Structure
 
@@ -40,64 +28,42 @@ chat_service/
 ├── requirements.txt  # Python dependencies
 └── README.md         # This file
 
-
 ## Getting Started
 
 ### Prerequisites
-- Python 3.8+
-- PostgreSQL
-- Node.js (for frontend)
+
+Python 3.8+, PostgreSQL, Node.js (for frontend)
 
 ### Backend Setup
-```bash
-# Clone the repository
+
+```
 git clone https://github.com/yourusername/chat_service.git
 cd chat_service
-
-# Create virtual environment
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-# Install dependencies
+source venv/bin/activate
 pip install -r requirements.txt
-
-# Set up environment variables
-cp .env.example .env  # Edit with your database credentials
-
-# Run migrations
+cp .env.example .env
 python manage.py migrate
-
-# Create superuser
 python manage.py createsuperuser
-
-# Start development server
 python manage.py runserver
-
+```
 
 ### Frontend Setup (Coming Soon)
 
-```shellscript
+```
 cd frontend
 npm install
 npm run dev
 ```
 
-
-
 ## Documentation
 
-- **API Documentation**: Visit `/api/docs/` when the server is running
-- **Detailed Docs**: See the `docs/` folder for comprehensive guides
-- **Frontend Guide**: Check `frontend/README.md` for frontend-specific instructions
+API docs at `/api/docs/`, detailed guides in `docs/`, frontend guide in `frontend/README.md`
 
+## Testing
 
-##  Testing
-
-```shellscript
-# Run all tests
+```
 python manage.py test
-
-# Run tests for specific app
 python manage.py test authentication
 ```
 
@@ -105,73 +71,60 @@ python manage.py test authentication
 
 ### Authentication
 
-- `POST /api/auth/register/` - Register new user
-- `POST /api/auth/login/` - User login
-- `POST /api/auth/refresh/` - Refresh JWT token
-
+POST /api/auth/register/, POST /api/auth/login/, POST /api/auth/refresh/, GET /api/auth/me/, PUT /api/auth/me/, GET /api/auth/users/, POST /api/auth/status/, POST /api/auth/logout/
 
 ### Messaging
 
-- `GET /api/messages/` - Get user's conversations
-- `POST /api/messages/send/` - Send a message
-- `GET /api/messages/{conversation_id}/` - Get conversation history
-
+GET /api/messages/, POST /api/messages/send/, GET /api/messages/{conversation\_id}/
 
 ### Friends
 
-- `POST /api/friends/request/` - Send friend request
-- `POST /api/friends/accept/{request_id}/` - Accept friend request
-- `GET /api/friends/` - Get friends list
-
+POST /api/friends/request/, POST /api/friends/accept/{request\_id}/, GET /api/friends/
 
 ### Rooms
 
-- `POST /api/rooms/create/` - Create chat room
-- `POST /api/rooms/{room_id}/join/` - Join room
-- `GET /api/rooms/` - Get user's rooms
-
+POST /api/rooms/create/, POST /api/rooms/{room\_id}/join/, GET /api/rooms/
 
 ## Environment Variables
 
-Create a `.env` file with:
-
-SECRET_KEY=your-secret-key
+SECRET\_KEY=your-secret-key
 DEBUG=True
-DATABASE_NAME=chat_service
-DATABASE_USER=postgres
-DATABASE_PASSWORD=your-password
-DATABASE_HOST=localhost
-DATABASE_PORT=5432
-```
+DATABASE\_NAME=chat\_service
+DATABASE\_USER=postgres
+DATABASE\_PASSWORD=your-password
+DATABASE\_HOST=localhost
+DATABASE\_PORT=5432
 
 ## Contributing
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
+Fork the repo, create a feature branch, commit changes, push, and open a pull request.
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT License — see LICENSE file.
 
 ## Deployment
 
 ### Using Docker (Coming Soon)
 
-```shellscript
+```
 docker-compose up
 ```
 
+## API Documentation
+
+Swagger at [http://localhost:8000/swagger/](http://localhost:8000/swagger/), production at [https://your-deployed-app.com/swagger/](https://your-deployed-app.com/swagger/)
+
+To use Swagger UI: browse endpoints, click Authorize, enter `Bearer your_access_token`, click "Try it out," fill parameters, and execute.
+
+Alternative views: ReDoc at [http://localhost:8000/redoc/](http://localhost:8000/redoc/), OpenAPI JSON at [http://localhost:8000/swagger.json](http://localhost:8000/swagger.json)
+
 ### Manual Deployment
 
-See `docs/deployment.md` for detailed deployment instructions.
+See `docs/deployment.md`.
 
-##  Contact
+## Contact
 
-- **GitHub**: [@officialmelvinp](https://github.com/officialmelvinp)
-- **Email**: [ajayiadeboye2002@gmail.cm](ajayiadeboye2002@gmail.com)
-- **LinkedIn**: [adeboye-melvin](https://www.linkedin.com/in/adeboye-melvin/)
-
+GitHub: [@officialmelvinp](https://github.com/officialmelvinp)
+Email: [ajayiadeboye2002@gmail.com](mailto:ajayiadeboye2002@gmail.com)
+LinkedIn: [adeboye-melvin](https://www.linkedin.com/in/adeboye-melvin/)
