@@ -26,13 +26,17 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'corsheaders',
+    
     
     # # Third party apps
     'rest_framework',
     'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',
     'channels',
     'drf_spectacular',
+    'corsheaders',
+    'drf_yasg',
+    
     
     # Local apps
     'common',      
@@ -41,6 +45,16 @@ INSTALLED_APPS = [
     'friends',
     'rooms',
 ]
+
+SWAGGER_SETTINGS = {
+    'SECURITY_DEFINITIONS': {
+        'Bearer': {
+            'type': 'apiKey',
+            'name': 'Authorization',
+            'in': 'header'
+        }
+    }
+}
 
 
 SPECTACULAR_SETTINGS = {
