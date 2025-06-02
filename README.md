@@ -2,7 +2,11 @@
 
 A comprehensive chat application built with Django REST Framework and React, featuring real-time messaging, advanced friend management, and chat rooms.
 
-## ✨ Features
+> **Portfolio Project Notice**  
+> This is a portfolio project developed to demonstrate full-stack development skills, scalable architecture design, and modern web development practices. Built as part of my software engineering journey to showcase expertise in Django, REST APIs, database design, and real-time applications.
+
+
+##  Features
 
 - **JWT Authentication** - Secure user registration, login, and profile management
 - **Advanced Friend System** - Send/accept/reject friend requests with smart user discovery
