@@ -4,6 +4,21 @@ from django.core.exceptions import ValidationError
 from django.db.models import Q
 from common.models import TimeStampedModel
 
+class FriendRequestManager(models.Manager):
+    """Custom manager for FriendRequest with common queries"""
+    
+    def pending_for_user(self, user):
+        """Get all pending requests received by a user"""
+        return self.filter(receiver=user, status='pending')
+    
+    def sent_by_user(self, user):
+        """Get all requests sent by a user"""
+        return self.filter(sender=user)
+    
+    def pending_sent_by_user(self, user):
+        """Get pending requests sent by a user"""
+        return self.filter(sender=user, status='pending')
+
 class FriendRequest(TimeStampedModel):
     """Manages friend requests between users"""
     STATUS_CHOICES = (
@@ -16,8 +31,17 @@ class FriendRequest(TimeStampedModel):
     receiver = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='received_requests')
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
     
+    # Add the custom manager
+    objects = FriendRequestManager()
+    
     class Meta:
         unique_together = ('sender', 'receiver')
+        # Add indexes for better performance
+        indexes = [
+            models.Index(fields=['receiver', 'status']),  # For "pending requests for user" queries
+            models.Index(fields=['sender', 'status']),    # For "requests sent by user" queries
+            models.Index(fields=['status']),              # For filtering by status
+        ]
     
     def clean(self):
         """Enhanced validation for friend requests"""
@@ -96,6 +120,11 @@ class Friendship(TimeStampedModel):
     
     class Meta:
         unique_together = ('user1', 'user2')
+        # Add index for friend lookups
+        indexes = [
+            models.Index(fields=['user1']),
+            models.Index(fields=['user2']),
+        ]
     
     def clean(self):
         """Prevent duplicate friendships by enforcing order"""
@@ -111,7 +140,7 @@ class Friendship(TimeStampedModel):
         """Override save to run validation"""
         self.clean()
         super().save(*args, **kwargs)
-    
+
     @classmethod
     def are_friends(cls, user1, user2):
         """Check if two users are friends"""
@@ -127,6 +156,11 @@ class Friendship(TimeStampedModel):
             friendship.user2 if friendship.user1 == user else friendship.user1
             for friendship in friendships
         ]
+    
+    @classmethod
+    def get_friend_count(cls, user):
+        """Get total number of friends for a user (performance optimized)"""
+        return cls.objects.filter(Q(user1=user) | Q(user2=user)).count()
         
     def __str__(self):
         return f"{self.user1.username} ↔ {self.user2.username}"
