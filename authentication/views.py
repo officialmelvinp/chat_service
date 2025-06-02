@@ -1,9 +1,7 @@
-# authentication/views.py
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework_simplejwt.views import TokenObtainPairView
-from rest_framework.pagination import PageNumberPagination
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
 from django.contrib.auth import get_user_model
@@ -12,14 +10,9 @@ from .serializers import (
 )
 from .permissions import IsOwnerOrReadOnly
 from .throttling import LoginRateThrottle, MessageSendRateThrottle
+from .pagination import UserListPagination  # Import the new pagination
 
 User = get_user_model()
-
-class UserPagination(PageNumberPagination):
-    """Custom pagination for user lists"""
-    page_size = 20
-    page_size_query_param = 'page_size'
-    max_page_size = 100
 
 class RegisterView(generics.CreateAPIView):
     """User registration endpoint"""
@@ -56,16 +49,46 @@ class UserDetailView(generics.RetrieveUpdateAPIView):
         return UserSerializer
 
 class UserListView(generics.ListAPIView):
-    """List all users (for finding people to chat with)"""
-    queryset = User.objects.filter(is_active=True).order_by('username')
+    """
+    List all users (for finding people to chat with)
+    
+    Supports pagination for large user bases.
+    Query params: ?page=1&page_size=25
+    """
     serializer_class = UserListSerializer
     permission_classes = [permissions.IsAuthenticated]
-    pagination_class = UserPagination
+    pagination_class = UserListPagination  # Use the new pagination class
     
     def get_queryset(self):
-        queryset = super().get_queryset()
-        # Exclude current user from the list
-        return queryset.exclude(id=self.request.user.id)
+        """Get all active users except current user"""
+        return User.objects.filter(
+            is_active=True
+        ).exclude(
+            id=self.request.user.id
+        ).order_by('username')
+    
+    def list(self, request, *args, **kwargs):
+        """Override to add additional metadata"""
+        queryset = self.get_queryset()
+        page = self.paginate_queryset(queryset)
+        
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            response_data = self.get_paginated_response(serializer.data)
+            
+            # Add additional stats
+            response_data.data['total_users'] = queryset.count()
+            response_data.data['online_users'] = queryset.filter(is_online=True).count()
+            
+            return response_data
+        
+        serializer = self.get_serializer(queryset, many=True)
+        return Response({
+            'results': serializer.data,
+            'count': queryset.count(),
+            'total_users': queryset.count(),
+            'online_users': queryset.filter(is_online=True).count()
+        })
 
 @api_view(['POST'])
 @permission_classes([permissions.IsAuthenticated])
@@ -109,9 +132,6 @@ def delete_account(request):
     # Delete the user (this will cascade to related models)
     user.delete()
     return Response({'message': 'Account permanently deleted'}, status=status.HTTP_200_OK)
-
-
-
 
 @api_view(['POST'])
 @permission_classes([permissions.IsAuthenticated])

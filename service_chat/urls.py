@@ -27,7 +27,7 @@ urlpatterns = [
     
     # API endpoints
     path('api/auth/', include('authentication.urls')),
-    # path('api/friends/', include('friends.urls')),
+    path('api/friends/', include('friends.urls')),
     # path('api/messages/', include('messaging.urls')),
     # path('api/rooms/', include('rooms.urls')),
     
