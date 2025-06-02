@@ -104,7 +104,7 @@ coverage run --source='.' manage.py test
 coverage report
 \`\`\`
 
-## 🔌 API Endpoints
+##  API Endpoints
 
 ###  Authentication
 - `POST /api/auth/register/` - User registration
