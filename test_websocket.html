@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chat Service WebSocket Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .container {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .messages {
+            height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-bottom: 10px;
+            background-color: #f9f9f9;
+        }
+        .message {
+            margin-bottom: 10px;
+            padding: 8px;
+            border-radius: 4px;
+            background-color: white;
+        }
+        .message.own {
+            background-color: #007bff;
+            color: white;
+            text-align: right;
+        }
+        .message.typing {
+            background-color: #ffc107;
+            font-style: italic;
+        }
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        input, button {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        input[type="text"] {
+            flex: 1;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+        .status.connected {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .status.disconnected {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .typing-indicator {
+            font-style: italic;
+            color: #666;
+            margin-bottom: 10px;
+        }
+        .api-section {
+            margin-bottom: 20px;
+        }
+        .api-result {
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <h1>🚀 Chat Service Test Client</h1>
+    
+    <!-- API Testing Section -->
+    <div class="container">
+        <h3>REST API Testing</h3>
+        
+        <!-- Login Form -->
+        <div class="api-section">
+            <h4>1. Login to Get Token</h4>
+            <div class="input-group">
+                <input type="text" id="usernameInput" placeholder="Username">
+                <input type="password" id="passwordInput" placeholder="Password">
+                <button onclick="login()">Login</button>
+            </div>
+            <div id="loginResult" class="api-result"></div>
+        </div>
+        
+        <!-- Create Conversation Form -->
+        <div class="api-section">
+            <h4>2. Create Direct Conversation</h4>
+            <div class="input-group">
+                <input type="number" id="recipientIdInput" placeholder="Recipient User ID">
+                <input type="text" id="initialMessageInput" placeholder="Initial Message (optional)">
+                <button onclick="createConversation()">Create</button>
+            </div>
+            <div id="conversationResult" class="api-result"></div>
+        </div>
+        
+        <!-- Send Message Form -->
+        <div class="api-section">
+            <h4>3. Send Message via REST API</h4>
+            <div class="input-group">
+                <input type="number" id="conversationIdInput" placeholder="Conversation ID">
+                <input type="text" id="apiMessageInput" placeholder="Message">
+                <button onclick="sendApiMessage()">Send</button>
+            </div>
+            <div id="messageResult" class="api-result"></div>
+        </div>
+    </div>
+
+    <!-- WebSocket Testing Section -->
+    <div class="container">
+        <h3>WebSocket Testing</h3>
+        
+        <!-- Connection Setup -->
+        <div class="input-group">
+            <input type="text" id="tokenInput" placeholder="Enter your JWT token" style="flex: 2;">
+            <input type="number" id="wsConversationInput" placeholder="Conversation ID" value="1">
+            <button onclick="connect()">Connect</button>
+            <button onclick="disconnect()">Disconnect</button>
+        </div>
+        <div id="connectionStatus" class="status disconnected">Disconnected</div>
+        
+        <!-- Chat Interface -->
+        <div id="messages" class="messages"></div>
+        <div id="typingIndicator" class="typing-indicator"></div>
+        
+        <div class="input-group">
+            <input type="text" id="messageInput" placeholder="Type your message..." onkeypress="handleKeyPress(event)">
+            <button onclick="sendMessage()">Send</button>
+            <button onclick="sendReaction()">❤️</button>
+        </div>
+        
+        <div class="input-group">
+            <button onclick="startTyping()">Start Typing</button>
+            <button onclick="stopTyping()">Stop Typing</button>
+            <button onclick="markLastMessageRead()">Mark Last Read</button>
+        </div>
+    </div>
+
+    <!-- Instructions -->
+    <div class="container">
+        <h3>📋 Instructions</h3>
+        <ol>
+            <li><strong>Login:</strong> Enter your username and password to get a JWT token</li>
+            <li><strong>Create Conversation:</strong> Create a direct conversation with another user</li>
+            <li><strong>Test REST API:</strong> Send messages via the REST API</li>
+            <li><strong>Test WebSockets:</strong> Copy your token to the WebSocket section and connect</li>
+            <li><strong>Start Chatting!</strong> Messages will appear in real-time</li>
+        </ol>
+        
+        <h4>🧪 Test Features:</h4>
+        <ul>
+            <li>✅ REST API messaging</li>
+            <li>✅ WebSocket real-time messaging</li>
+            <li>✅ Typing indicators</li>
+            <li>✅ Message reactions</li>
+            <li>✅ Read receipts</li>
+        </ul>
+    </div>
+
+    <script>
+        // Global variables
+        let authToken = '';
+        let chatSocket = null;
+        let conversationId = null;
+        let lastMessageId = null;
+        let currentUser = null;
+
+        // REST API Functions
+        async function login() {
+            const username = document.getElementById('usernameInput').value;
+            const password = document.getElementById('passwordInput').value;
+            const resultDiv = document.getElementById('loginResult');
+            
+            if (!username || !password) {
+                resultDiv.textContent = 'Please enter both username and password';
+                return;
+            }
+            
+            try {
+                const response = await fetch('http://localhost:8000/api/auth/login/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        username: username,
+                        password: password
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    authToken = data.access;
+                    resultDiv.textContent = 'Login successful! Token: ' + authToken;
+                    document.getElementById('tokenInput').value = authToken;
+                } else {
+                    resultDiv.textContent = 'Login failed: ' + JSON.stringify(data);
+                }
+            } catch (error) {
+                resultDiv.textContent = 'Error: ' + error.message;
+            }
+        }
+        
+        async function createConversation() {
+            const recipientId = document.getElementById('recipientIdInput').value;
+            const initialMessage = document.getElementById('initialMessageInput').value;
+            const resultDiv = document.getElementById('conversationResult');
+            
+            if (!authToken) {
+                resultDiv.textContent = 'Please login first to get a token';
+                return;
+            }
+            
+            if (!recipientId) {
+                resultDiv.textContent = 'Please enter a recipient ID';
+                return;
+            }
+            
+            try {
+                const payload = {
+                    recipient_id: parseInt(recipientId)
+                };
+                
+                if (initialMessage) {
+                    payload.message = initialMessage;
+                }
+                
+                const response = await fetch('http://localhost:8000/api/messages/conversations/direct/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + authToken
+                    },
+                    body: JSON.stringify(payload)
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.textContent = 'Conversation created! ID: ' + data.id + '\n\n' + JSON.stringify(data, null, 2);
+                    document.getElementById('wsConversationInput').value = data.id;
+                    document.getElementById('conversationIdInput').value = data.id;
+                } else {
+                    resultDiv.textContent = 'Failed to create conversation: ' + JSON.stringify(data);
+                }
+            } catch (error) {
+                resultDiv.textContent = 'Error: ' + error.message;
+            }
+        }
+        
+        async function sendApiMessage() {
+            const conversationId = document.getElementById('conversationIdInput').value;
+            const message = document.getElementById('apiMessageInput').value;
+            const resultDiv = document.getElementById('messageResult');
+            
+            if (!authToken) {
+                resultDiv.textContent = 'Please login first to get a token';
+                return;
+            }
+            
+            if (!conversationId || !message) {
+                resultDiv.textContent = 'Please enter both conversation ID and message';
+                return;
+            }
+            
+            try {
+                const response = await fetch('http://localhost:8000/api/messages/messages/send/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + authToken
+                    },
+                    body: JSON.stringify({
+                        conversation_id: parseInt(conversationId),
+                        message: message,
+                        message_type: 'text'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.textContent = 'Message sent! ID: ' + data.id + '\n\n' + JSON.stringify(data, null, 2);
+                    document.getElementById('apiMessageInput').value = '';
+                } else {
+                    resultDiv.textContent = 'Failed to send message: ' + JSON.stringify(data);
+                }
+            } catch (error) {
+                resultDiv.textContent = 'Error: ' + error.message;
+            }
+        }
+
+        // WebSocket Functions
+        function connect() {
+            const token = document.getElementById('tokenInput').value;
+            conversationId = document.getElementById('wsConversationInput').value;
+            
+            if (!token || !conversationId) {
+                alert('Please enter both JWT token and conversation ID');
+                return;
+            }
+
+            // Close existing connection
+            if (chatSocket) {
+                chatSocket.close();
+            }
+
+            // Create WebSocket connection
+            const wsUrl = `ws://localhost:8000/ws/chat/${conversationId}/?token=${token}`;
+            chatSocket = new WebSocket(wsUrl);
+
+            chatSocket.onopen = function(e) {
+                updateConnectionStatus(true);
+                addMessage('System', 'Connected to chat!', 'system');
+            };
+
+            chatSocket.onmessage = function(e) {
+                const data = JSON.parse(e.data);
+                handleWebSocketMessage(data);
+            };
+
+            chatSocket.onclose = function(e) {
+                updateConnectionStatus(false);
+                addMessage('System', 'Disconnected from chat', 'system');
+            };
+
+            chatSocket.onerror = function(e) {
+                console.error('WebSocket error:', e);
+                addMessage('System', 'Connection error occurred', 'system');
+            };
+        }
+
+        function disconnect() {
+            if (chatSocket) {
+                chatSocket.close();
+                chatSocket = null;
+            }
+        }
+
+        function handleWebSocketMessage(data) {
+            console.log('Received:', data);
+
+            switch(data.type) {
+                case 'chat_message':
+                    lastMessageId = data.message_id;
+                    const isOwn = data.sender_username === currentUser;
+                    addMessage(data.sender_username, data.message, isOwn ? 'own' : 'other');
+                    break;
+
+                case 'typing_indicator':
+                    updateTypingIndicator(data.username, data.typing);
+                    break;
+
+                case 'read_receipt':
+                    addMessage('System', `${data.username} read message ${data.message_id}`, 'system');
+                    break;
+
+                case 'message_reaction':
+                    addMessage('System', `${data.username} reacted ${data.emoji} to message`, 'system');
+                    break;
+
+                case 'user_status':
+                    addMessage('System', `${data.username} is ${data.status}`, 'system');
+                    if (data.status === 'online' && !currentUser) {
+                        currentUser = data.username; // Assume first online user is current user
+                    }
+                    break;
+            }
+        }
+
+        function sendMessage() {
+            const messageInput = document.getElementById('messageInput');
+            const message = messageInput.value.trim();
+            
+            if (!message || !chatSocket) {
+                return;
+            }
+
+            chatSocket.send(JSON.stringify({
+                'type': 'chat_message',
+                'message': message,
+                'message_type': 'text'
+            }));
+
+            messageInput.value = '';
+        }
+
+        function sendReaction() {
+            if (!lastMessageId || !chatSocket) {
+                alert('No message to react to');
+                return;
+            }
+
+            chatSocket.send(JSON.stringify({
+                'type': 'reaction',
+                'message_id': lastMessageId,
+                'emoji': '❤️'
+            }));
+        }
+
+        function startTyping() {
+            if (chatSocket) {
+                chatSocket.send(JSON.stringify({
+                    'type': 'typing_start'
+                }));
+            }
+        }
+
+        function stopTyping() {
+            if (chatSocket) {
+                chatSocket.send(JSON.stringify({
+                    'type': 'typing_stop'
+                }));
+            }
+        }
+
+        function markLastMessageRead() {
+            if (!lastMessageId || !chatSocket) {
+                alert('No message to mark as read');
+                return;
+            }
+
+            chatSocket.send(JSON.stringify({
+                'type': 'mark_read',
+                'message_id': lastMessageId
+            }));
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            } else {
+                // Start typing indicator on first keypress
+                startTyping();
+                
+                // Stop typing after 3 seconds of inactivity
+                clearTimeout(window.typingTimeout);
+                window.typingTimeout = setTimeout(stopTyping, 3000);
+            }
+        }
+
+        function addMessage(sender, message, type = 'other') {
+            const messagesDiv = document.getElementById('messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+            
+            const timestamp = new Date().toLocaleTimeString();
+            messageDiv.innerHTML = `
+                <strong>${sender}</strong> <small>(${timestamp})</small><br>
+                ${message}
+            `;
+            
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function updateConnectionStatus(connected) {
+            const statusDiv = document.getElementById('connectionStatus');
+            if (connected) {
+                statusDiv.textContent = 'Connected ✅';
+                statusDiv.className = 'status connected';
+            } else {
+                statusDiv.textContent = 'Disconnected ❌';
+                statusDiv.className = 'status disconnected';
+            }
+        }
+
+        function updateTypingIndicator(username, isTyping) {
+            const typingDiv = document.getElementById('typingIndicator');
+            if (isTyping) {
+                typingDiv.textContent = `${username} is typing...`;
+            } else {
+                typingDiv.textContent = '';
+            }
+        }
+    </script>
+</body>
+</html>
