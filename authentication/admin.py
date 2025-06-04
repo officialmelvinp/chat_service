@@ -2,9 +2,12 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from .models import User
 
+# Remove this line - it's causing the error
+# admin.site.unregister(User)
+
 class CustomUserAdmin(UserAdmin):
     """Custom admin for User model"""
-    list_display = ('username', 'email', 'first_name', 'last_name', 'gender', 'relationship_status', 'is_online', 'is_staff', 'created_at')
+    list_display = ('id', 'username', 'email', 'first_name', 'last_name', 'gender', 'relationship_status', 'is_online', 'is_staff', 'created_at')
     list_filter = ('is_online', 'is_staff', 'is_superuser', 'is_active', 'gender', 'relationship_status', 'country')
     search_fields = ('username', 'email', 'first_name', 'last_name', 'country', 'city', 'interests', 'languages')
     readonly_fields = ('last_active', 'created_at', 'updated_at', 'age', 'interests_list', 'languages_list')
@@ -44,4 +47,5 @@ class CustomUserAdmin(UserAdmin):
         return ', '.join(obj.languages_list) if obj.languages_list else 'None'
     languages_list_display.short_description = 'Languages (List)'
 
+# Register with custom admin
 admin.site.register(User, CustomUserAdmin)
